@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import store from "./store/index";
 
-
+// test
 function Square(props) {
   return (
     <button className="square" onClick={props.onClick}>
