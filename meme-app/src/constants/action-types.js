@@ -1,0 +1,2 @@
+export const CHANGE_KEYWORD = "CHANGE_KEYWORD";
+export const GET_CONTACT_LIST = "GET_CONTACT_LIST";

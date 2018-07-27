@@ -1,151 +1,172 @@
+/* global gapi */
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import store from "./store/index";
+import ContactsPage from "./components/ContactsPage"
+import DetailsPage from "./components/DetailsPage"
+import { getContactList } from "./actions/index"
+import { Provider, connect } from 'react-redux'
+import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
 
-// test
-function Square(props) {
-  return (
-    <button className="square" onClick={props.onClick}>
-      {props.value}
-    </button>
-  );
-}
+const CLIENT_ID = "30824722166-lj3l1u9831cvc9f75e35n9rkopemju5p.apps.googleusercontent.com";
+const API_KEY = "AIzaSyBrFFdMDFo-susL3KY8vSMUUXGG5n5nOoM";
+const DISCOVERY_DOCS = ["https://people.googleapis.com/$discovery/rest?version=v1"];
+const SCOPES = "profile https://www.googleapis.com/auth/contacts.readonly";
 
-class Board extends React.Component {
-  renderSquare(i) {
-    return (
-      <Square
-        value={this.props.squares[i]}
-        onClick={() => this.props.onClick(i)}
-      />
-    );
+class SignIn extends React.Component {
+  constructor(props) {
+    super(props);
+    this.authenticateClick = this.authenticateClick.bind(this);
+  }
+
+  authenticateClick() {
+    if (this.props.authenticated) {
+      this.props.signOut();
+    } else {
+      this.props.signIn();
+    }
   }
 
   render() {
     return (
-      <div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
+      <div className="signin">
+        <button type="button" onClick={this.authenticateClick}>{ this.props.authenticated ? "Sign out" : "Sign in to Google"}</button>
       </div>
     );
   }
 }
 
-class Game extends React.Component {
+
+
+class ContactList extends React.Component {
+  render() {
+    return (
+      <ul className="contactList">
+      {this.props.contacts.map(contact => {
+          if (contact.name.toLowerCase().indexOf(this.props.keywords.toLowerCase()) >= 0) {
+            return (<li key={contact.key}><Link to={`/details/${contact.key}`}>{contact.name}</Link></li>);
+          }
+          else {
+            return null;
+          }
+        })}
+      </ul>
+    );
+  }
+}
+
+
+class ConnectedContactApp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      history: [
-        {
-          squares: Array(9).fill(null)
-        }
-      ],
-      stepNumber: 0,
-      xIsNext: true
+      authenticated: false,
+      isLoaded: false,
+      signedInUser: "",
     };
+    this.updateSigninStatus = this.updateSigninStatus.bind(this);
+    this.signIn = this.signIn.bind(this);
+    this.signOut = this.signOut.bind(this);
+    this.initClient = this.initClient.bind(this);
+    this.changeKeywords = this.changeKeywords.bind(this);
   }
 
-  handleClick(i) {
-    const history = this.state.history.slice(0, this.state.stepNumber + 1);
-    const current = history[history.length - 1];
-    const squares = current.squares.slice();
-    if (calculateWinner(squares) || squares[i]) {
-      return;
-    }
-    squares[i] = this.state.xIsNext ? "X" : "O";
+  componentDidMount() {
+    gapi.load('client:auth2', this.initClient);
+  }
+  
+  async initClient() {
+    await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: DISCOVERY_DOCS,
+        clientId: CLIENT_ID,
+        scope: SCOPES
+    });
+  
+    gapi.auth2.getAuthInstance().isSignedIn.listen(this.updateSigninStatus);
+    // Handle the initial sign-in state.
+    this.updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
     this.setState({
-      history: history.concat([
-        {
-          squares: squares
+      isLoaded: true
+    });
+  }
+
+  async updateSigninStatus(isSignedIn) {
+    this.setState({
+      authenticated: isSignedIn
+    });
+
+    if (isSignedIn) {
+      let currentUserResponse = await gapi.client.people.people.get({
+        'resourceName': 'people/me',
+        'requestMask.includeField': 'person.names'
+      });
+
+      let contactsResponse = await gapi.client.people.people.get({
+        'resourceName': 'people/me/connections',
+        'requestMask.includeField': 'person.names,person.emailAddresses,person.photos'
+      });
+      var contacts = contactsResponse.result.connections.map(contact => {
+        return {
+          key: contact.resourceName.replace('/',''),
+          name: contact.names[0].displayName,
+          photo: contact.photos[0],
+          emailAddresses: contact.emailAddresses
         }
-      ]),
-      stepNumber: history.length,
-      xIsNext: !this.state.xIsNext
-    });
+      });
+      this.setState({
+        signedInUser: currentUserResponse.result.names[0].displayName,
+      });
+
+      this.props.getContactList(contacts);
+    }
   }
 
-  jumpTo(step) {
+  signIn(event) {
+    gapi.auth2.getAuthInstance().signIn();
+  }
+
+  signOut(event) {
+    gapi.auth2.getAuthInstance().signOut();
+  }
+
+  changeKeywords(event) {
     this.setState({
-      stepNumber: step,
-      xIsNext: (step % 2) === 0
-    });
+      keywords: event.target.value
+    })
   }
 
   render() {
-    const history = this.state.history;
-    const current = history[this.state.stepNumber];
-    const winner = calculateWinner(current.squares);
-
-    const moves = history.map((step, move) => {
-      const desc = move ?
-        'Go to move #' + move :
-        'Go to game start';
-      return (
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
-        </li>
-      );
-    });
-
-    let status;
-    if (winner) {
-      status = "Winner: " + winner;
-    } else {
-      status = "Next player: " + (this.state.xIsNext ? "X" : "O");
+    let loginPage = null;
+    if (this.state.isLoaded === true) {
+      loginPage = <SignIn signIn={this.signIn} signOut={this.signOut} authenticated={this.state.authenticated} />;
     }
 
     return (
-      <div className="game">
-        <div className="game-board">
-          <Board
-            squares={current.squares}
-            onClick={i => this.handleClick(i)}
-          />
+      <Router>
+        <div className="contactApp">
+          {this.state.signedInUser.length > 0 && `Hello ${this.state.signedInUser}`}
+          {loginPage}
+          <Switch>
+            <Route exact path="/" render={ContactsPage} />
+            <Route path="/details/:resourceName" component={DetailsPage} />
+          </Switch>
         </div>
-        <div className="game-info">
-          <div>{status}</div>
-          <ol>{moves}</ol>
-        </div>
-      </div>
+      </Router>
     );
   }
 }
 
+const mapDispatchToProps = dispatch => {
+  return {
+    getContactList: contacts => dispatch(getContactList(contacts))
+  };
+};
+const ContactApp = connect(null, mapDispatchToProps)(ConnectedContactApp);
 // ========================================
 
-ReactDOM.render(<Provider store={store}><Game /></Provider>, document.getElementById("root"));
+ReactDOM.render(<Provider store={store}><ContactApp /></Provider>, document.getElementById("root"));
 
-function calculateWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6]
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
-  }
-  return null;
-}
 

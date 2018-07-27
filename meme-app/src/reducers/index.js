@@ -1,10 +1,15 @@
+import * as actions from "../constants/action-types"
+
 const initialState = {
-    articles: []
+    contacts: [],
+    keywords: ""
   };
   const rootReducer = (state = initialState, action) => {
     switch (action.type) {
-        case ADD_ARTICLE:
-            return { ...state, articles: [...state.articles, action.payload] };
+        case actions.CHANGE_KEYWORD:
+            return { ...state, keywords: action.payload };
+        case actions.GET_CONTACT_LIST:
+            return { ...state, contacts: action.payload };
         default:
           return state;
       }
