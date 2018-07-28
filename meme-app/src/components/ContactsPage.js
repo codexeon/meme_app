@@ -4,6 +4,7 @@ import { changeKeyword } from "../actions/index"
 import ContactsList from './ContactsList'
 import {bindActionCreators} from 'redux';
 import { withRouter } from 'react-router'
+import { TextField, MaskedTextField } from 'office-ui-fabric-react/lib/TextField';
 
 class ConnectedContactsPage extends React.Component {
   constructor(props) {
@@ -11,14 +12,14 @@ class ConnectedContactsPage extends React.Component {
     this.changeKeyword = this.changeKeyword.bind(this);
   }
 
-  changeKeyword(event) {
-    this.props.changeKeyword(event.target.value);
+  changeKeyword(value) {
+    this.props.changeKeyword(value);
   }
 
   render() {
       return (
         <div>
-          <input type="text" onChange={this.changeKeyword} />
+          <TextField label="Search contacts" onChanged={this.changeKeyword}/>
           <ContactsList />
         </div>
       );

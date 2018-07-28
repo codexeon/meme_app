@@ -2,6 +2,7 @@ import React from "react";
 import { connect } from "react-redux";
 import { withRouter } from 'react-router'
 import { Link } from 'react-router-dom'
+import { DefaultButton } from 'office-ui-fabric-react/lib/Button';
 
 class ConnectedDetailsPage extends React.Component {
   render() {
@@ -15,7 +16,7 @@ class ConnectedDetailsPage extends React.Component {
     {
       contactDetails = (
         <div>
-            <div><Link to='/'><button type="button">List</button></Link></div>
+            <div><Link to='/'><DefaultButton text="Back to list" /></Link></div>
             <img src={contact.photo.url} />
             <div>Name: {contact.name}</div>
             <div>Emails:</div>

@@ -9,6 +9,9 @@ import DetailsPage from "./components/DetailsPage"
 import { getContactList } from "./actions/index"
 import { Provider, connect } from 'react-redux'
 import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
+import { Fabric } from 'office-ui-fabric-react/lib/Fabric';
+import { DefaultButton } from 'office-ui-fabric-react/lib/Button';
+import { Label } from 'office-ui-fabric-react/lib/Label';
 
 const CLIENT_ID = "30824722166-lj3l1u9831cvc9f75e35n9rkopemju5p.apps.googleusercontent.com";
 const API_KEY = "AIzaSyBrFFdMDFo-susL3KY8vSMUUXGG5n5nOoM";
@@ -32,7 +35,7 @@ class SignIn extends React.Component {
   render() {
     return (
       <div className="signin">
-        <button type="button" onClick={this.authenticateClick}>{ this.props.authenticated ? "Sign out" : "Sign in to Google"}</button>
+        <DefaultButton primary={ true } onClick={this.authenticateClick} text={ this.props.authenticated ? "Sign out" : "Sign in to Google"} />
       </div>
     );
   }
@@ -146,14 +149,16 @@ class ConnectedContactApp extends React.Component {
 
     return (
       <Router>
+        <Fabric>
         <div className="contactApp">
-          {this.state.signedInUser.length > 0 && `Hello ${this.state.signedInUser}`}
+          <Label>{this.state.signedInUser.length > 0 && `Hello ${this.state.signedInUser}`}</Label>
           {loginPage}
           <Switch>
             <Route exact path="/" render={ContactsPage} />
             <Route path="/details/:resourceName" component={DetailsPage} />
           </Switch>
         </div>
+        </Fabric>
       </Router>
     );
   }
