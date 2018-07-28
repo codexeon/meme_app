@@ -4,7 +4,7 @@ import { changeKeyword } from "../actions/index"
 import ContactsList from './ContactsList'
 import {bindActionCreators} from 'redux';
 import { withRouter } from 'react-router'
-import { TextField, MaskedTextField } from 'office-ui-fabric-react/lib/TextField';
+import { TextField } from 'office-ui-fabric-react/lib/TextField';
 
 class ConnectedContactsPage extends React.Component {
   constructor(props) {
